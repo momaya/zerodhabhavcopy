@@ -1,0 +1,233 @@
+{% extends 'index.html' %}
+{% block content %}
+
+ <div id="vm" style = "background-color: white;">
+      <template>
+        <b-container fluid >
+          <!-- User Interface controls -->
+          <div style = "background-color: #4267B2;">
+		  <b-container class="bv-example-row"><br>
+		  <b-row>
+		  <b-col>
+			<b-img left src="../../static/zerodha.png" alt="Left image"></b-img>
+		  </b-col>
+            <b-col>
+              		  <h1 style = 'padding: 30px 0px 30px 0px;;text-align: center; color:white'>Zerodha BhavCopy</h1>
+            </b-col>
+			<b-col></b-col>	
+          </b-row>
+        <br>
+        </b-container>
+		</div><br>
+		<div style = "background-color: #4267B2;">
+          <div style = " margin-top:0px; margin-left: 0px; margin-right: 0px; margin-bottom: 0px"><br>
+            <b-row>
+                <b-col md="4" class="my-1">
+				
+				
+                </b-col>
+				
+				<b-col md="4" class="my-1">
+                <b-form-group horizontal class="mb-0">
+                    <b-input-group>
+                    <b-form-input v-model="stocksearch" placeholder="Search the stock here!" />
+                    </b-input-group>
+                </b-form-group>
+                </b-col>
+				<b-col md="2" class="my-1">
+				<b-form-group horizontal class="mb-1">
+                    <b-input-group>
+					<b-button v-on:click.prevent="submitForm" variant="warning" type="submit">Search Stock</b-button>
+                    </b-input-group>
+                </b-form-group>
+                </b-col>
+				<b-col md="2" class="my-1">
+				<b-form-group horizontal class="mb-1">
+                    <b-input-group>
+					<b-button v-on:click.prevent="csv('zerodha')" variant="danger" type="submit">Export as CSV</b-button>
+                    </b-input-group>
+                </b-form-group>
+                </b-col>
+
+            </b-row>
+			<br>
+        </div>
+        </div><br>
+        <div style = "background-color: white;">
+          <!-- Main table element -->
+
+          <b-table id="zerodha" show-empty
+                   stacked="md"
+				   :headVariant="headVariant"
+				   :bordered="bordered"
+				   :hover="hover"
+				   :fixed="fixed"
+                   :items="stock"
+                   :fields="fields"
+                   :current-page="currentPage"
+                   :per-page="perPage"
+                   :filter="filter"
+                   :sort-by.sync="sortBy"
+                   :sort-desc.sync="sortDesc"
+                   :sort-direction="sortDirection"
+                   @filtered="onFiltered"
+				   title="Treats"
+          >
+		  <template v-slot:top-right>
+        <q-btn
+          color="primary"
+          icon-right="archive"
+          label="Export to csv"
+          no-caps
+          @click="exportTable"
+        ></q-btn>
+      </template>
+            <template slot="name" slot-scope="row">{{row.value.first}} {{row.value.last}}</template>
+            <template slot="isActive" slot-scope="row">{{row.value}}?'Yes :)':'No :('</template>
+            <template slot="actions" slot-scope="row">
+              <!-- We use @click.stop here to prevent a 'row-clicked' event from also happening -->
+              <b-button size="sm" @click.stop="info(row.item, row.index, $event.target)" class="mr-1">
+                Info modal
+              </b-button>
+              <b-button size="sm" @click.stop="row.toggleDetails">
+                {{ row.detailsShowing}} ? 'Hide' : 'Show'  Details
+              </b-button>
+            </template>
+            <template slot="row-details" slot-scope="row">
+              <b-card>
+                <ul>
+                  <li v-for="(value, key) in row.item" :key="key">{{ key }}: {{ value}}</li>
+                </ul>
+              </b-card>
+            </template>
+          </b-table>
+		</b-container>
+		<b-container class="bv-example-row">
+		  <b-row>
+		  <b-col></b-col>
+            <b-col>
+              <b-pagination :total-rows="totalRows" :per-page="perPage" v-model="currentPage" class="my-0" />
+            </b-col>
+			<b-col></b-col>	
+          </b-row>
+
+          <!-- Info modal -->
+          <b-modal id="modalInfo" @hide="resetModal" :title="modalInfo.title" ok-only>
+            <pre>{{ modalInfo.content }}</pre>
+          </b-modal>
+		  <br>
+        </div>
+        </b-container>
+      </template>
+    </div>
+<script type="text/javascript">
+ var app = new Vue({
+  loading: false,
+  el: '#vm',
+  data: {
+    info: null,
+	stock: null,
+	stocksearch: null,
+	err_msg: "",
+	title: "Welcome to Zerodha",
+    items: [],
+    loading: true,
+    field:[{ key: 'name', label: 'Name', sortable: true, sortDirection: 'desc' }],
+    fields: [
+      { key: 'name', label: 'Name',sortable: true, sortDirection: 'desc' },
+      { key: 'code', label: 'Code', sortable: true, 'class': 'text-center' },
+      { key: 'open', label: 'Open' , sortable: true},
+      { key: 'close', label: 'Close', sortable: true },
+      { key: 'high', label: 'High' , sortable: true},
+      { key: 'low', label: 'Low' , sortable: true},
+	  { key: 'percentage', label: 'Percentage' , sortable: true},
+    ],
+    currentPage: 1,
+    perPage: 7,
+    totalRows: 10000,
+    pageOptions: [ 20, 100, 500 ],
+    sortBy: null,
+    sortDesc: false,
+    sortDirection: 'asc',
+    filter: null,
+	hover: true,
+	dark: false,
+	fixed: true,
+	bordered: true,
+	headVariant: "dark",
+    modalInfo: { title: '', content: '' }
+  },
+  computed: {
+  sortOptions () {
+    // Create an options list from our fields
+    return this.field
+      .filter(f => f.sortable)
+      .map(f => { return { text: f.label, value: f.key } })
+    }
+  },
+  methods: {
+    info (item, index, button) {
+      this.modalInfo.title = `Row index: ${index}`
+      this.modalInfo.content = JSON.stringify(item, null, 2)
+      this.$root.$emit('bv::show::modal', 'modalInfo', button)
+    },
+    resetModal () {
+      this.modalInfo.title = ''
+      this.modalInfo.content = ''
+    },
+    onFiltered (filteredItems) {
+      // Trigger pagination to update the number of buttons/pages due to filtering
+      this.totalRows = filteredItems.length
+      this.currentPage = 1
+    },
+	submitForm: function(){
+			this.err_msg = ""
+            axios({
+                method : "POST",
+                url:"https://zerodhabhavcopy.herokuapp.com/api/", //django path name
+                headers: {'X-CSRFTOKEN': '{{ csrf_token }}', 'Content-Type': 'application/json'},
+                data : {"stock":this.stocksearch},//data
+              }).then(response => {
+
+                  this.stock = response.data.redis
+                  
+
+              }).catch(err => {
+                     this.err_msg = err.response.data['err'];
+              });
+
+          },
+	csv: function(table_id, separator = ','){
+		var rows = document.querySelectorAll('table#' + table_id + ' tr');
+			// Construct csv
+			var csv = [];
+			for (var i = 0; i < rows.length; i++) {
+				var row = [], cols = rows[i].querySelectorAll('td, th');
+				for (var j = 0; j < cols.length; j++) {
+					
+					var data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, '').replace(/(\s\s)/gm, ' ')
+					
+					data = data.replace(/"/g, '""');
+					// Push escaped string
+					row.push('"' + data + '"');
+				}
+				csv.push(row.join(separator));
+			}
+			var csv_string = csv.join('\n');
+			// Download it
+			var filename = 'StockList'  + '_' + new Date().toLocaleDateString() + '.csv';
+			var link = document.createElement('a');
+			link.style.display = 'none';
+			link.setAttribute('target', '_blank');
+			link.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv_string));
+			link.setAttribute('download', filename);
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+	},
+  },
+});
+
+</script>
+
+{% endblock %}
