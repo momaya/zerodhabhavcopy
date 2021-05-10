@@ -10,7 +10,7 @@ import csv
 sched = BlockingScheduler()
 
 
-@sched.scheduled_job('cron', day_of_week='mon-fri', hour=18)
+@sched.scheduled_job('cron', day_of_week='mon-fri', hour=18, timezone="Asia/Kolkata")
 def scheduled_job():
 
     REDIS_HOST = "redis-19587.c8.us-east-1-3.ec2.cloud.redislabs.com"
